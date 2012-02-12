@@ -9,12 +9,15 @@
 #include <string.h>
 #include <metropolis.h>
 #include <clusterupdate.h>
-#include <gsl/gls_vector.h>
+#include <gsl/gsl_vector.h>
+#include <mikemath.h>
+#include <lattice.h>
 
 int
 main (int argc, char **argv)
 {
   static int verbose_flag;
+  static int specified_file_flag = 0;
   char conf_file[PATH_MAX + NAME_MAX];
   int c; /* Output status for getopt*/
   int useclud;
@@ -23,7 +26,7 @@ main (int argc, char **argv)
   int i,j,k;
   /*screenwidth = atoi(getenv("COLUMNS"));*/
 
-  gsl_vector ** lattice = NULL;
+  gsl_vector **lattice = NULL;
 
   /* Libconf Stuff */
   config_t cfg;
@@ -63,6 +66,7 @@ main (int argc, char **argv)
 	case 'f':
 	  printf ("Using Config file: '%s'\n", optarg);
     strcpy(conf_file,optarg);
+    specified_file_flag = 1;
 	  break;
 
 	case '?':
@@ -89,6 +93,13 @@ main (int argc, char **argv)
     }
 
 
+  if(!specified_file_flag)
+  {
+    fprintf(stderr,"No file specified, please specify one with the -f flag\n");
+    exit(EXIT_FAILURE);
+  }
+
+
   /* Reading Config File */
   if(!config_read_file(&cfg,conf_file))
   {
@@ -97,7 +108,6 @@ main (int argc, char **argv)
     return(EXIT_FAILURE);
   }
 
-  
   for(i = 0 ; i < 10 ; i++)
     printf("-");
   printf("\n");
@@ -128,7 +138,7 @@ main (int argc, char **argv)
   else
   {
     printf("No Specified sidelength, defaulting to 10\n");
-    spacedims = 10;
+    sidelength = 10;
   }
   if(!config_lookup_bool(&cfg,"useclud",&useclud))
   {
@@ -141,10 +151,32 @@ main (int argc, char **argv)
     printf("%-27s = %s\n","Update Algorith","Metropolis");
 
 
+  for(i = 0 ; i < 10 ; i++)
+    printf("-");
+  printf("\n");
+
+
   /* ALLOCATION OF LATTICE AND VECTORS */
   
+  lattice = allocate_lattice(sidelength,spacedims,spindims);
+
+  if(verbose_flag)
+    fprintf(stderr,"Allocated %d points on the lattice\n",intpow(sidelength,spacedims));
+  
+  
+  randomize_spins(lattice,sidelength,spacedims,spindims);
+
+  if(verbose_flag) 
+    print_lattice (lattice,sidelength,spacedims,spindims);
 
 
+
+
+
+  /* CLEANUP */
+  free_lattice(lattice,sidelength,spacedims);
+  if(verbose_flag)
+    fprintf(stderr,"Freed Lattice\n");
 
 
   return EXIT_SUCCESS;
