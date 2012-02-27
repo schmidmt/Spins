@@ -4,7 +4,7 @@
 #include <gsl/gsl_math.h>
 #include <math.h>
 #include <lattice.h>
-#include <mikemath.h>
+#include <common.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -62,6 +62,20 @@ set_homogenious_spins(gsl_vector ** lattice, int sidelength, int spacedims, int 
   for(i = 0 ; i < intpow(sidelength,spacedims) ; i++)
   {
     gsl_vector_set_basis(lattice[i],0);
+  }
+}
+
+void
+set_checkerboard_spins(gsl_vector ** lattice, int sidelength, int spacedims, int spindims)
+{
+  int i;
+  for(i = 0 ; i < intpow(sidelength,spacedims) ; i++)
+  {
+    gsl_vector_set_basis(lattice[i],0);
+    if(i % 2 == 1)
+    {
+      gsl_vector_scale(lattice[i],-1.0);
+    }
   }
 }
 
@@ -137,6 +151,5 @@ int location_to_num (int sidelength, int spacedims, int * location)
   {
     num += location[i]*intpow(sidelength,spacedims-1-i);
   }
-
   return(num);
 }

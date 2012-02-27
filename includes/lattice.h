@@ -1,17 +1,21 @@
 #ifndef LATTICE_H
 #define LATTICE_H 1
 
-gsl_vector **
-allocate_lattice (int side_length, int spacedims, int spindims);
+#include <gsl/gsl_vector.h>
+#include <gsl/gsl_rng.h>
 
-int
-free_lattice ( gsl_vector ** lattice , int sidelength, int spacedims );
+gsl_vector ** allocate_lattice (int side_length, int spacedims, int spindims);
+
+int free_lattice ( gsl_vector ** lattice , int sidelength, int spacedims );
 
 void
 print_lattice (gsl_vector ** lattice, int sidelength, int spacedims , int spindims);
 
 void
 set_homogenious_spins(gsl_vector ** lattice, int sidelength, int spacedims, int spindims);
+
+void
+set_checkerboard_spins(gsl_vector ** lattice, int sidelength, int spacedims, int spindims);
 
 void
 randomize_spins(gsl_vector ** lattice, int sidelength, int spacedims, int spindims, gsl_rng * r);

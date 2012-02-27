@@ -1,0 +1,19 @@
+set testdata {
+  {"neighbor1" "0  4 2 1 1" "^0 1 , 2 1 , 1 0 , 1 2.*$"}
+  {"neighbor2" "0  4 2 0 0" "^3 0 , 1 0 , 0 3 , 0 1.*$"}
+  {"neighbor3" "0  4 2 3 3" "^2 3 , 0 3 , 3 2 , 3 0.*$"}
+  {"num_to_location1" "1  4 2 0" "^0 0.*$"}
+  {"num_to_location2" "1  4 2 15" "^3 3.*$"}
+  {"location_to_num1" "2  4 2 0 0" "^0.*$"}
+  {"location_to_num2" "2  4 2 3 3" "^15.*$"}
+  {"randomloc2loc1" "3  4 10" "^SUCCESS.*$"}
+}
+
+global LATTICETEST
+foreach pattern $testdata {
+  eval "spawn $LATTICETEST [lindex $pattern 1]"
+    expect {
+      -re [lindex $pattern 2] { pass [lindex $pattern 0] }
+      default {fail [lindex $pattern 0]}
+    }
+}

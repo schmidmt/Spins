@@ -1,0 +1,14 @@
+set testdata {
+  {"magnetization1" "0  4 2 1" "^1\.0.*$"}
+  {"localenergy1" "1  1 2 1 0 0" "^4\.0.*$"}
+  {"totalenergy1" "2  10 2 1" "^0\.0.*$"}
+}
+
+global TEST
+foreach pattern $testdata {
+  eval "spawn $TEST [lindex $pattern 1]"
+    expect {
+      -re [lindex $pattern 2] { pass [lindex $pattern 0] }
+      default {fail [lindex $pattern 0]}
+    }
+}
