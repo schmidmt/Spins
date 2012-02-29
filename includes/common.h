@@ -1,16 +1,27 @@
-#ifndef MIKEMATH_H
-#define MIKEMATH_H 1
+#ifndef COMMON_H
+#define COMMON_H 1
 
 #include <math.h>
 #include <float.h>
-
-/*
-int
-intpow(int x, int y);
-*/
+#include <gsl/gsl_rng.h>
 
 #define intpow(x,y) (int)pow(x,y)
 
+typedef struct
+{
+  int sidelength;
+  int spacedims;
+  int spindims;
+  int useclud;
+  char * outputfile_name;
+  char * conf_file;
+  int verbose_flag;
+  int max_settle;
+  gsl_rng * rng;
+  int elements;
+  int block_size;
+  int blocks;
+} settings;
 
 void
 enqueue(double * array, int size, double new);
@@ -19,4 +30,4 @@ inline void
 loadBar(int x, int n, int r, int w);
 
 
-#endif /* !MIKEMATH_H */
+#endif /* !COMMON_H */

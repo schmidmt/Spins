@@ -21,38 +21,33 @@
 int
 main (int argc, char **argv)
 {
-  static int verbose_flag;
+  settings conf;
   static int specified_file_flag = 0;
+  static int verbose_flag = 0;
   char conf_file[PATH_MAX + NAME_MAX];
   char outputfile_name[PATH_MAX + NAME_MAX];
   int c; /* Output status for getopt*/
   int useclud,random_spins;
-  int spacedims, spindims, sidelength;
   int rng_seed;
   int i,j;
-  int max_settle;
   int step,steps_of_beta;
   double beta, beta_start,beta_end,beta_step;
-  /*screenwidth = atoi(getenv("COLUMNS"));*/
   FILE * outputfp;
 
+
   const gsl_rng_type * RngType;
-  gsl_rng * rng;
 
   gsl_rng_env_setup();
   RngType = gsl_rng_default;
-  rng = gsl_rng_alloc (RngType);
+  conf.rng = gsl_rng_alloc (RngType);
 
-  gsl_vector **lattice = NULL;
-  gsl_vector * magnet  = NULL ;
+  gsl_vector ** lattice    = NULL;
+  gsl_vector * mag_vector  = NULL ;
 
-  int * location = (int *) malloc(spacedims*sizeof(int));
-  int * neigh    = (int *) malloc(spacedims*sizeof(int));
 
   /* Physical Quantities */
-  double mag;
-  double energy;
-  double ** data;
+  double mag,mag_error;
+  double energy,energy_error;
 
 
   /* Libconf Stuff */
@@ -107,7 +102,9 @@ main (int argc, char **argv)
       }
     }
 
-  if (verbose_flag)
+  conf.verbose_flag = verbose_flag;
+
+  if (conf.verbose_flag)
     puts ("#verbose flag is set");
 
   /* Print any remaining command line arguments (not options). */
@@ -164,37 +161,37 @@ main (int argc, char **argv)
     return(EXIT_FAILURE);
   }
 
-  if(config_lookup_int(&cfg,"spindims",&spindims))
+  if(config_lookup_int(&cfg,"spindims",&conf.spindims))
   {
-    printf("#%-27s = %d\n","Number of spin dimensions",spindims);
-    fprintf(outputfp,"#%-27s = %d\n","Number of spin dimensions",spindims);
+    printf("#%-27s = %d\n","Number of spin dimensions",conf.spindims);
+    fprintf(outputfp,"#%-27s = %d\n","Number of spin dimensions",conf.spindims);
   }
   else
   {
     printf("#No Specified spindims, defaulting to 2\n");
-    spindims = 2;
+    conf.spindims = 2;
   }
 
-  if(config_lookup_int(&cfg,"spacedims",&spacedims))
+  if(config_lookup_int(&cfg,"spacedims",&conf.spacedims))
   {
-    printf("#%-27s = %d\n","Number of space dimensions",spacedims);
-    fprintf(outputfp,"#%-27s = %d\n","Number of space dimensions",spacedims);
+    printf("#%-27s = %d\n","Number of space dimensions",conf.spacedims);
+    fprintf(outputfp,"#%-27s = %d\n","Number of space dimensions",conf.spacedims);
   }
   else
   {
     printf("#No Specified spacedims, defaulting to 2\n");
-    spacedims = 2;
+    conf.spacedims = 2;
   }
 
-  if(config_lookup_int(&cfg,"sidelength",&sidelength))
+  if(config_lookup_int(&cfg,"sidelength",&conf.sidelength))
   {
-    printf("#%-27s = %d\n","Sidelenth of lattice",sidelength);
-    fprintf(outputfp,"#%-27s = %d\n","Sidelenth of lattice",sidelength);
+    printf("#%-27s = %d\n","Sidelenth of lattice",conf.sidelength);
+    fprintf(outputfp,"#%-27s = %d\n","Sidelenth of lattice",conf.sidelength);
   }
   else
   {
     printf("#No Specified sidelength, defaulting to 10\n");
-    sidelength = 10;
+    conf.sidelength = 10;
   }
 
   if(!config_lookup_bool(&cfg,"randomize_spins",&random_spins))
@@ -239,7 +236,7 @@ main (int argc, char **argv)
   else
   {
     printf("#No Specified beta_start, defaulting to 0\n");
-    beta_start = 0;
+    beta_start = 1;
   }
 
   if(config_lookup_float(&cfg,"beta_end",&beta_end))
@@ -264,22 +261,42 @@ main (int argc, char **argv)
     beta_step= 0.1;
   }
 
-  if(config_lookup_int(&cfg,"max_settle",&max_settle))
+  if(config_lookup_int(&cfg,"max_settle",&conf.max_settle))
   {
-    printf("#%-27s = %d\n","Max Settle Iterations",max_settle);
-    fprintf(outputfp,"#%-27s = %d\n","Max Settle Iterations",max_settle);
+    printf("#%-27s = %d\n","Max Settle Iterations",conf.max_settle);
+    fprintf(outputfp,"#%-27s = %d\n","Max Settle Iterations",conf.max_settle);
   }
   else
   {
     printf("#No Specified max_settle, defaulting to 1000\n");
-    max_settle= 10000;
+    conf.max_settle= 10000;
   }
 
   if(config_lookup_int(&cfg,"rng_seed",&rng_seed))
   {
     printf("#%-27s = %d\n","Random Seed",rng_seed);
     fprintf(outputfp,"#%-27s = %d\n","Random Seed",rng_seed);
-    gsl_rng_set(rng,rng_seed);
+    gsl_rng_set(conf.rng,rng_seed);
+  }
+  if(config_lookup_int(&cfg,"block_size",&conf.block_size))
+  {
+    printf("#%-27s = %d\n","Blocking Size",conf.block_size);
+    fprintf(outputfp,"#%-27s = %d\n","Blocking Size",conf.block_size);
+  }
+  else
+  {
+    printf("#No Specified block_size, defaulting to 1000\n");
+    conf.block_size = 1000;
+  }
+  if(config_lookup_int(&cfg,"blocks",&conf.blocks))
+  {
+    printf("#%-27s = %d\n","Blocks",conf.blocks);
+    fprintf(outputfp,"#%-27s = %d\n","Blocks",conf.blocks);
+  }
+  else
+  {
+    printf("#No Specified blocks, defaulting to 10\n");
+    conf.blocks = 10;
   }
 
   for(i = 0 ; i < 10 ; i++)
@@ -289,86 +306,83 @@ main (int argc, char **argv)
   }
   printf("\n");
   fprintf(outputfp,"\n");
-  fprintf(outputfp,"#%-11s %-12s %-12s\n","Beta","<m>","<E>");
 
 
   /*************************************
    * ALLOCATION OF LATTICE AND VECTORS *
    *************************************/
-  printf("#Allocating\n");
-  
-  lattice = allocate_lattice(sidelength,spacedims,spindims);
+  //Store Element number for future use
+  conf.elements = intpow(conf.sidelength,conf.spacedims);
 
-  if(verbose_flag)
-    fprintf(stderr,"#Allocated %d points on the lattice\n",intpow(sidelength,spacedims));
+  printf("#Allocating\n");
+
+
+  int * location = (int *) malloc(conf.spacedims*sizeof(int));
+  int * neigh    = (int *) malloc(conf.spacedims*sizeof(int));
+  
+  lattice = allocate_lattice(conf);
+
+  if(conf.verbose_flag)
+    fprintf(stderr,"#Allocated %d points on the lattice\n",conf.elements);
   
   
   if(random_spins == 1)
   {
-    if(verbose_flag)
+    if(conf.verbose_flag)
       fprintf(stderr,"Randomizing Spins\n");
-    randomize_spins(lattice,sidelength,spacedims,spindims,rng);
+    randomize_spins(lattice,conf);
   }
   else
   {
-    if(verbose_flag)
+    if(conf.verbose_flag)
       fprintf(stderr,"Setting Homogenious Spins\n");
-    set_homogenious_spins(lattice,sidelength,spacedims,spindims);
-    //set_checkerboard_spins(lattice,sidelength,spacedims,spindims);
+    set_homogenious_spins(lattice,conf);
+    //set_checkerboard_spins(lattice,sidelength,conf.spacedims,conf.spindims);
   }
 
-  /* if(verbose_flag) 
-    print_lattice (lattice,sidelength,spacedims,spindims); */
+  /* if(conf.verbose_flag) 
+    print_lattice (lattice,sidelength,conf.spacedims,conf.spindims); */
 
-  magnet = gsl_vector_alloc(spindims);
-
+  mag_vector = gsl_vector_calloc(conf.spindims);
   
   /**********************
    * Running Simulation *
    **********************/
   beta          = beta_start;
-  mag           = magnetization(lattice,sidelength,spacedims,spindims,magnet);
-  energy        = total_energy(lattice,sidelength,spacedims,spindims);
+  mag           = magnetization(lattice,conf,mag_vector);
+  energy        = total_energy(lattice,conf);
   steps_of_beta = (int) ceil((beta_end-beta_start)/beta_step);
   step          = 0;
+  fprintf(outputfp,"#%-11s %-13s %-13s %-13s %-13s\n","Beta","<m>","m err","<E>","E err");
 
-  data = (double **) malloc(sizeof(double **)*(steps_of_beta+1)); 
-  for(i = 0 ; i <= steps_of_beta ; i ++)
-  {
-    data[i] = (double *) calloc(3,sizeof(double));
-  }
- 
+  //mupdate(lattice,conf,beta,mag_vector,&mag,&mag_error,&energy,&energy_error);
+  //print_lattice(lattice,conf);
   printf("#Starting simulation\n\n");
   while(step <= steps_of_beta)
   {
-    data[step][0] = beta; 
-    loadBar(step,steps_of_beta,50,80);
+    if(!conf.verbose_flag)
+    {
+      loadBar(step,steps_of_beta,50,80);
+    }
     fflush(stdout);
 
-    /* This specifies how man steps the
-     * particular beta will be evaluated at 
-     * if it never settles down.
-     */
-    for(i = 0 ; i < max_settle ; i++)
-    {
-      metropolis_update(lattice,sidelength,spacedims,spindims,beta,rng,magnet,&energy);
-    }
-    gsl_blas_ddot(magnet,magnet,&mag);
-    energy = total_energy(lattice,sidelength,spacedims,spindims);
-    mag = magnetization(lattice,sidelength,spacedims,spindims,magnet);
-    fprintf(outputfp,"%e %e %e\n",beta,mag/intpow(sidelength,spacedims),energy/intpow(sidelength,spacedims));
-    data[step][1] = mag;
-    data[step][2] = energy;
+    mupdate(lattice,conf,beta,mag_vector,&mag,&mag_error,&energy,&energy_error);
+    //gsl_blas_ddot(mag_vector,mag_vector,&mag);
+    //energy = total_energy(lattice,conf);
+    //mag = magnetization(lattice,conf,mag_vector);
+    fprintf(outputfp,"%e %+e %+e %+e %+e\n",beta,fabs(mag)/conf.elements,mag_error/conf.elements,energy/conf.elements,energy_error/conf.elements);
     beta += beta_step;
     step++;
   }
-  printf("\n");
+  //printf("\n");
+  //
+  //print_lattice(lattice,conf);
 
   /***********
    * CLEANUP *
    ***********/
   printf("#Cleaning Up\n");
-  free_lattice(lattice,sidelength,spacedims);
+  free_lattice(lattice,conf);
   free(location);
   location = NULL;
   free(neigh);
@@ -376,8 +390,9 @@ main (int argc, char **argv)
   fclose(outputfp);
 
   /* Free GSL Random Num Generator*/
-  gsl_rng_free (rng);
+  gsl_rng_free (conf.rng);
   
+
   printf("#Done\n");
 
   return EXIT_SUCCESS;

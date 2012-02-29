@@ -3,8 +3,12 @@
 
 #include <gsl/gsl_vector.h>
 #include <gsl/gsl_rng.h>
+#include <common.h>
 
 int
-metropolis_update ( gsl_vector ** lattice, int sidelength, int spacedims, int spindims, double beta, gsl_rng * rng, gsl_vector * magnet, double * energy );
+mupdate_step( gsl_vector ** lattice, settings conf, double beta, gsl_vector * magnet, double * energy );
+
+int
+mupdate(gsl_vector ** lattice, settings conf, double beta, gsl_vector * mag_vector, double * mag, double * mag_error, double * energy , double * energy_error );
 
 #endif /* !METROPOLIS_H */
