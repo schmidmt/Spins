@@ -1,9 +1,25 @@
 #include <gsl/gsl_vector.h>
 #include <gsl/gsl_blas.h>
 #include <gsl/gsl_rng.h>
+#include <gsl/gsl_math.h>
 #include <lattice.h>
 #include <common.h>
 #include <math.h>
+
+double
+magnetization2(gsl_vector ** lattice, settings conf, gsl_vector * mag_vector)
+{
+  int i;
+  gsl_vector_set_zero(mag_vector);
+  double result = 0;
+  double mag2 = 0;
+  for(i = 0 ; i < conf.elements ; i++)
+  {
+    gsl_blas_ddot(lattice[i],lattice[i],&result);
+    mag2 += result;
+  }
+  return(mag2/conf.elements);
+}
 
 double
 magnetization(gsl_vector ** lattice, settings conf, gsl_vector * mag_vector)
@@ -21,8 +37,9 @@ magnetization(gsl_vector ** lattice, settings conf, gsl_vector * mag_vector)
   {
     result += gsl_vector_get(lattice[i],0);
   }
+  return(result);
   */
-  return(sqrt(result));
+  return(result/conf.elements);
 }
 
 
@@ -62,7 +79,6 @@ new_local_energy (gsl_vector ** lattice, settings conf, int * loc, gsl_vector * 
     energy -= result;
   }
   free(neigh);
-  //return(energy/((intpow(sidelength,spacedims))));
   return(energy);
 }
 
@@ -78,5 +94,20 @@ total_energy(gsl_vector ** lattice, settings conf)
     energy += local_energy(lattice,conf,loc)/2;
   }
   free(loc);
-  return(energy);
+  return(energy/conf.elements);
+}
+
+double
+total_energy2(gsl_vector ** lattice, settings conf)
+{
+  int i;
+  double energy2 = 0;
+  int * loc = (int *) malloc(conf.spacedims*sizeof(int));
+  for(i = 0 ; i < conf.elements ; i++)
+  { 
+    num_to_location(conf, i, loc);
+    energy2 += gsl_pow_2(local_energy(lattice,conf,loc)/2);
+  }
+  free(loc);
+  return(energy2/conf.elements);
 }

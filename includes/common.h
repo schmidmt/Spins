@@ -23,6 +23,18 @@ typedef struct
   int blocks;
 } settings;
 
+typedef struct
+{
+  double beta;
+  double erg;
+  double erg_error;
+  double mag;
+  double mag_error;
+} datapoint;
+
+
+
+
 void
 enqueue(double * array, int size, double new);
 

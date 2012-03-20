@@ -107,22 +107,40 @@ mupdate_step(gsl_vector ** lattice, settings conf, double beta, gsl_vector * mag
 /* mupdate: Thermalizes lattice and calculates errors.
  */
 int
-mupdate(gsl_vector ** lattice, settings conf, double beta, gsl_vector * mag_vector, double * mag, double * mag_error, double * energy , double * energy_error)
+mupdate(gsl_vector ** lattice, settings conf, double beta, gsl_vector * mag_vector, double * mag, double * mag_error, double * mag2, double * mag2_error, double * energy , double * energy_error, double * energy2, double* energy2_error)
 {
   int i,j;
   double * energy_log = NULL, * mag_log = NULL;
   double * energy_mean = NULL, * mag_mean = NULL;
   double * energy_err_log = NULL, * mag_err_log = NULL;
+  double * energy2_log = NULL, * mag2_log = NULL;
+  double * energy2_mean = NULL, * mag2_mean = NULL;
+  double * energy2_err_log = NULL, * mag2_err_log = NULL;
 
-  energy_log     = (double *) malloc(sizeof(double *)*(conf.block_size));
-  energy_mean    = (double *) malloc(sizeof(double *)*(conf.blocks));
-  energy_err_log = (double *) malloc(sizeof(double *)*(conf.blocks));
-  mag_log        = (double *) malloc(sizeof(double *)*(conf.block_size));
-  mag_mean       = (double *) malloc(sizeof(double *)*(conf.blocks));
-  mag_err_log    = (double *) malloc(sizeof(double *)*(conf.blocks));
+  energy_log      = (double *) malloc(sizeof(double *)*(conf.block_size));
+  energy_mean     = (double *) malloc(sizeof(double *)*(conf.blocks));
+  energy_err_log  = (double *) malloc(sizeof(double *)*(conf.blocks));
+  mag_log         = (double *) malloc(sizeof(double *)*(conf.block_size));
+  mag_mean        = (double *) malloc(sizeof(double *)*(conf.blocks));
+  mag_err_log     = (double *) malloc(sizeof(double *)*(conf.blocks));
+  energy2_log     = (double *) malloc(sizeof(double *)*(conf.block_size));
+  energy2_mean    = (double *) malloc(sizeof(double *)*(conf.blocks));
+  energy2_err_log = (double *) malloc(sizeof(double *)*(conf.blocks));
+  mag2_log        = (double *) malloc(sizeof(double *)*(conf.block_size));
+  mag2_mean       = (double *) malloc(sizeof(double *)*(conf.blocks));
+  mag2_err_log    = (double *) malloc(sizeof(double *)*(conf.blocks));
   //Thermalize 
+  /*
+  FILE * therm_out;
+  therm_out = fopen("thermout.dat","w+");
+  */
   for(i = 0 ; i < conf.max_settle ; i++)
+  {
     mupdate_step(lattice, conf, beta, mag_vector, energy);
+    //fprintf(therm_out,"%d %e %e\n",i,total_energy(lattice,conf)/conf.elements,magnetization(lattice,conf,mag_vector)/conf.elements);
+  }
+  //fclose(therm_out);
+  //return(0);
 
   /**************************************
    * Run more to get averages and error *
@@ -134,16 +152,26 @@ mupdate(gsl_vector ** lattice, settings conf, double beta, gsl_vector * mag_vect
       mupdate_step(lattice, conf, beta, mag_vector, energy );
       energy_log[i] = total_energy(lattice,conf);
       mag_log[i]    = magnetization(lattice,conf,mag_vector);
+      energy2_log[i] = total_energy2(lattice,conf);
+      mag2_log[i]    = magnetization2(lattice,conf,mag_vector);
     }
     energy_mean[j]    = gsl_stats_mean(energy_log,1,conf.block_size);
     energy_err_log[j] = gsl_stats_sd(energy_log,1,conf.block_size);
     mag_mean[j]       = gsl_stats_mean(mag_log,1,conf.block_size);
     mag_err_log[j]    = gsl_stats_sd(mag_log,1,conf.block_size);
+    energy2_mean[j]    = gsl_stats_mean(energy2_log,1,conf.block_size);
+    energy2_err_log[j] = gsl_stats_sd(energy2_log,1,conf.block_size);
+    mag2_mean[j]       = gsl_stats_mean(mag2_log,1,conf.block_size);
+    mag2_err_log[j]    = gsl_stats_sd(mag2_log,1,conf.block_size);
   }
   *energy       = gsl_stats_mean(energy_mean,1,conf.blocks);
   *energy_error = gsl_stats_mean(energy_err_log,1,conf.blocks);
   *mag          = gsl_stats_mean(mag_mean,1,conf.blocks);
   *mag_error    = gsl_stats_mean(mag_err_log,1,conf.blocks);
+  *energy2       = gsl_stats_mean(energy_mean,1,conf.blocks);
+  *energy2_error = gsl_stats_mean(energy_err_log,1,conf.blocks);
+  *mag2          = gsl_stats_mean(mag_mean,1,conf.blocks);
+  *mag2_error    = gsl_stats_mean(mag_err_log,1,conf.blocks);
 
   free(energy_log);
   energy_log = NULL;
@@ -157,6 +185,18 @@ mupdate(gsl_vector ** lattice, settings conf, double beta, gsl_vector * mag_vect
   mag_mean = NULL;
   free(mag_err_log);
   mag_err_log = NULL;
+  free(energy2_log);
+  energy2_log = NULL;
+  free(energy2_mean);
+  energy2_mean = NULL;
+  free(energy2_err_log);
+  energy2_err_log = NULL;
+  free(mag2_log);
+  mag2_log = NULL;
+  free(mag2_mean);
+  mag2_mean = NULL;
+  free(mag2_err_log);
+  mag2_err_log = NULL;
   //Compute Errors
   return(0);
 }

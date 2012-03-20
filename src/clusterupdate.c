@@ -1,28 +1,163 @@
 /* clusterupdate.c: Tools for updating a lattice using the Wolff Algorithm
  */
 
-#include <clusterupdate.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <common.h>
 #include <gsl/gsl_vector.h>
+#include <gsl/gsl_rng.h>
+#include <gsl/gsl_sf_exp.h>
+#include <gsl/gsl_math.h>
+#include <gsl/gsl_statistics.h>
+#include <gsl/gsl_blas.h>
+#include <lattice.h>
+#include <math.h>
+#include <clusterupdate.h>
+#include <physics.h>
 
+/********************************************************************************
+ * clusterupdatebatch: Runs clusterupdate multiple times and gets physics as well
+ * as error estimates.
+ *******************************************************************************/
+int
+clusterupdatebatch(gsl_vector ** lattice, settings conf, double beta, datapoint * data )
+{
+  int i,j;
+  double * e_block, * m_block, * e_block_avg, * m_block_avg, \
+         * e_block_error, * m_block_error;
+  gsl_vector * mag_vector;
+
+  e_block       = (double *) malloc(conf.block_size*sizeof(double));
+  m_block       = (double *) malloc(conf.block_size*sizeof(double));
+  e_block_avg   = (double *) malloc(conf.blocks*sizeof(double));
+  m_block_avg   = (double *) malloc(conf.blocks*sizeof(double));
+  e_block_error = (double *) malloc(conf.blocks*sizeof(double));
+  m_block_error = (double *) malloc(conf.blocks*sizeof(double));
+
+  mag_vector = gsl_vector_alloc(conf.spindims);
+
+  //Settle first
+  for(i = 0 ; i < conf.max_settle ; i++)
+  {
+   clusterupdate(lattice,conf,beta);
+  }
+  //Get averages and stdev for messurements
+  for(i = 0 ; i < conf.blocks ; i++)
+  {
+    for(j = 0 ; j < conf.block_size ; j++)
+    {
+      clusterupdate(lattice,conf,beta);
+      e_block[j] = total_energy(lattice,conf);
+      m_block[j] = magnetization(lattice,conf,mag_vector);
+    }
+    e_block_avg[i]   = gsl_stats_mean(e_block,1,conf.block_size);
+    e_block_error[i] = gsl_stats_sd(e_block,1,conf.block_size);
+    m_block_avg[i]   = gsl_stats_mean(m_block,1,conf.block_size);
+    m_block_error[i] = gsl_stats_sd(m_block,1,conf.block_size);
+  }
+  (*data).beta = beta;
+  (*data).erg  = gsl_stats_mean(e_block_avg,1,conf.blocks);
+  (*data).erg_error = gsl_stats_sd(e_block_avg,1,conf.blocks);
+  (*data).mag  = gsl_stats_mean(m_block_avg,1,conf.blocks);
+  (*data).mag_error = gsl_stats_sd(m_block_avg,1,conf.blocks);
+
+  free(e_block);
+  free(m_block);
+  free(e_block_avg);
+  free(m_block_avg);
+  free(e_block_error);
+  free(m_block_error);
+  gsl_vector_free(mag_vector);
+  return(0);
+}
 /*******************************************************************************
  * clusterupdate: Runs the Wolff algorithm on lattice.
  ******************************************************************************/
 int
-clusterupdate(gsl_vector ** lattice, settings conf)
+clusterupdate(gsl_vector ** lattice, settings conf, double beta)
 {
-  printf("Empty");
-  return(0);
+  int j,cluster_size;
+  gsl_vector * base, * delta;
+  int * update_start, * update_list;
+  double scale;
+
+  base  = gsl_vector_alloc(conf.spindims);
+  delta = gsl_vector_alloc(conf.spindims);
+  update_list  = (int *) calloc(conf.elements,sizeof(int));
+  /*********************************************************
+   * This might throw off detail ballance! Ask about this! *
+   *********************************************************/
+  update_start = (int *) malloc(conf.spacedims*sizeof(int));
+  double sqrsum = 0, random_num;
+
+  //Generate a random unit vector
+  sqrsum = 0;
+  for(j = 0 ; j < conf.spindims ; j++)
+  {
+    random_num = 2*(gsl_rng_uniform(conf.rng)-0.5);
+    gsl_vector_set(base,j,random_num);
+    sqrsum += gsl_pow_2(random_num);
+  }
+  gsl_vector_scale(base,1.0/sqrt(sqrsum));
+  
+  //Pick a random point on the lattice then pass off to gencluster
+  num_to_location(conf,gsl_rng_uniform_int(conf.rng,conf.elements),update_start);
+  update_list[location_to_num(conf,update_start)] = 1;
+  
+  //Pass off to gencluster
+  cluster_size = gencluster(lattice,conf,update_start,update_list,base,beta);
+  cluster_size++; //So it will include the first element
+  
+  //Flip the entire cluster
+  for(j = 0 ; j < conf.elements ; j++)
+  {
+    if(update_list[j] == 1)
+    {
+      gsl_blas_ddot(lattice[j],base,&scale);
+      gsl_vector_memcpy(delta,base);
+      gsl_vector_scale(delta,-2.0*scale);
+      gsl_vector_add(lattice[j],delta);
+    }
+  }
+
+  gsl_vector_free(base);
+  free(update_start);
+  free(update_list);
+  return(cluster_size);
 }
 
 /*******************************************************************************
  * gencluster: recursivily calls itself and returns a set of lattice points.
  ******************************************************************************/
 int
-gencluster(gsl_vector ** lattice, settings conf)
+gencluster(gsl_vector ** lattice, settings conf, int * loc , int * update_list, gsl_vector * base, double beta)
 {
-  printf("Empty");
-  return(0);
+  int i,update_count = 0;
+  int * neigh = (int *) malloc(conf.spacedims*sizeof(int));
+  double exp_factor,s1n,s2n;
+
+  for(i = 0 ; i < 2*conf.spacedims ; i++)
+  {
+    neighbor(conf,loc,neigh,i);
+    //Continue on if the point has already been checked.
+    if(update_list[location_to_num(conf,neigh)] != 0)
+      continue;
+    gsl_blas_ddot(lattice[location_to_num(conf,loc)],base,&s1n);
+    gsl_blas_ddot(lattice[location_to_num(conf,neigh)],base,&s2n);
+    exp_factor = 2.0*s1n*s2n/beta;
+  
+    if(exp_factor > -10 && gsl_rng_uniform(conf.rng) < 1-gsl_sf_exp(exp_factor))
+    {
+      update_list[location_to_num(conf,neigh)] = 1;
+      update_count += 1;
+      update_count += gencluster(lattice,conf,neigh,update_list,base,beta);
+    }
+    else
+    {
+      update_list[location_to_num(conf,neigh)] = -1;
+    }
+  }
+  
+  free(neigh);
+  return(update_count);
 }

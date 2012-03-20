@@ -9,6 +9,6 @@ int
 mupdate_step( gsl_vector ** lattice, settings conf, double beta, gsl_vector * magnet, double * energy );
 
 int
-mupdate(gsl_vector ** lattice, settings conf, double beta, gsl_vector * mag_vector, double * mag, double * mag_error, double * energy , double * energy_error );
+mupdate(gsl_vector ** lattice, settings conf, double beta, gsl_vector * mag_vector, double * mag, double * mag_error, double * mag2, double * mag2_err, double * energy , double * energy_error, double * energy2, double* energy2_error);
 
 #endif /* !METROPOLIS_H */
