@@ -1,3 +1,23 @@
+/******************************************************************************
+    Copyright 2012 Michael Schmidt (mts@colorado.edu)
+
+    This file is part of spins.
+
+    spins is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    spins is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with spins.  If not, see <http://www.gnu.org/licenses/>.
+******************************************************************************/
+
+
 #include <gsl/gsl_vector.h>
 #include <gsl/gsl_rng.h>
 #include <gsl/gsl_blas.h>
@@ -67,7 +87,7 @@ mupdate_step(gsl_vector ** lattice, settings conf, double beta, gsl_vector * mag
   if(conf.verbose_flag)
     printf("de = %+1.1e dep = %+1.1e ",de,dep);
 
-  exp_factor = -(1.0/beta)*(dep-de);
+  exp_factor = -beta*(dep-de);
 
   /* Calculate the probibility of acceptance of the new vector, pacc.
    * If the expontential facor is less than -10, it's basically zero,

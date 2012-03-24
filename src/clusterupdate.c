@@ -1,3 +1,23 @@
+/******************************************************************************
+    Copyright 2012 Michael Schmidt (mts@colorado.edu)
+
+    This file is part of spins.
+
+    spins is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    spins is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with spins.  If not, see <http://www.gnu.org/licenses/>.
+******************************************************************************/
+
+
 /* clusterupdate.c: Tools for updating a lattice using the Wolff Algorithm
  */
 
@@ -24,13 +44,15 @@ clusterupdatebatch(gsl_vector ** lattice, settings conf, double beta, datapoint 
 {
   int i,j;
   double * e_block, * m_block, * e_block_avg, * m_block_avg, \
-         * e_block_error, * m_block_error;
+         * e_block_error, * m_block_error, * c_block , * chi_block;
   gsl_vector * mag_vector;
 
   e_block       = (double *) malloc(conf.block_size*sizeof(double));
   m_block       = (double *) malloc(conf.block_size*sizeof(double));
   e_block_avg   = (double *) malloc(conf.blocks*sizeof(double));
   m_block_avg   = (double *) malloc(conf.blocks*sizeof(double));
+  c_block       = (double *) malloc(conf.blocks*sizeof(double));
+  chi_block     = (double *) malloc(conf.blocks*sizeof(double));
   e_block_error = (double *) malloc(conf.blocks*sizeof(double));
   m_block_error = (double *) malloc(conf.blocks*sizeof(double));
 
@@ -54,12 +76,18 @@ clusterupdatebatch(gsl_vector ** lattice, settings conf, double beta, datapoint 
     e_block_error[i] = gsl_stats_sd(e_block,1,conf.block_size);
     m_block_avg[i]   = gsl_stats_mean(m_block,1,conf.block_size);
     m_block_error[i] = gsl_stats_sd(m_block,1,conf.block_size);
+    c_block[i]       = beta*pow(e_block_error[i],2);
+    chi_block[i]     = beta*pow(m_block_error[i],2);
   }
-  (*data).beta = beta;
-  (*data).erg  = gsl_stats_mean(e_block_avg,1,conf.blocks);
+  (*data).beta      = beta;
+  (*data).erg       = gsl_stats_mean(e_block_avg,1,conf.blocks);
   (*data).erg_error = gsl_stats_sd(e_block_avg,1,conf.blocks);
-  (*data).mag  = gsl_stats_mean(m_block_avg,1,conf.blocks);
+  (*data).mag       = gsl_stats_mean(m_block_avg,1,conf.blocks);
   (*data).mag_error = gsl_stats_sd(m_block_avg,1,conf.blocks);
+  (*data).c         = gsl_stats_mean(c_block,1,conf.blocks);
+  (*data).c_error   = gsl_stats_sd(c_block,1,conf.blocks);
+  (*data).chi       = gsl_stats_mean(chi_block,1,conf.blocks);
+  (*data).chi_error = gsl_stats_sd(chi_block,1,conf.blocks);
 
   free(e_block);
   free(m_block);
@@ -144,7 +172,7 @@ gencluster(gsl_vector ** lattice, settings conf, int * loc , int * update_list, 
       continue;
     gsl_blas_ddot(lattice[location_to_num(conf,loc)],base,&s1n);
     gsl_blas_ddot(lattice[location_to_num(conf,neigh)],base,&s2n);
-    exp_factor = 2.0*s1n*s2n/beta;
+    exp_factor = -2.0*s1n*s2n*beta;
   
     if(exp_factor > -10 && gsl_rng_uniform(conf.rng) < 1-gsl_sf_exp(exp_factor))
     {

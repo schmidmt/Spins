@@ -1,3 +1,23 @@
+/******************************************************************************
+    Copyright 2012 Michael Schmidt (mts@colorado.edu)
+
+    This file is part of spins.
+
+    spins is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    spins is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with spins.  If not, see <http://www.gnu.org/licenses/>.
+******************************************************************************/
+
+
 #include <config.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -101,13 +121,18 @@ main (int argc, char **argv)
   step          = 0;
   //                   1     2      3     4     5     6    7
   fprintf(outputfp,"#%-11s %-13s %-13s %-13s %-13s %-13s %-13s\n","Beta","<m>","m err","<E>","E err","Specific Heat","Magnetic Susc");
-  
+  printf("#Starting simulation\n\n");
   for(i = 0 ; i < steps_of_beta ; i++)
   {
-    data.beta = 0;
+    if(!conf.verbose_flag)
+    {
+      loadBar(step,steps_of_beta,50,80);
+    }
+    fflush(stdout);
     clusterupdatebatch(lattice,conf,beta,&data);
-    printf("%e %e %e %e %e\n",data.beta,data.erg,data.erg_error,data.mag,data.mag_error);
+    fprintf(outputfp,"%+e %+e %+e %+e %+e %+e %+e %+e %+e\n",data.beta,data.mag,data.mag_error,data.erg,data.erg_error,data.c,data.c_error,data.chi,data.chi_error);
     beta += beta_step;
+    step++;
   }
 
   /***********

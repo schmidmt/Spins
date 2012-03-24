@@ -6,6 +6,8 @@
 #include <gsl/gsl_rng.h>
 
 #define intpow(x,y) (int)pow(x,y)
+#define CRITT 1.0/0.6
+#define CRITB 0.6
 
 typedef struct
 {
@@ -15,6 +17,7 @@ typedef struct
   int useclud;
   char * outputfile_name;
   char * conf_file;
+  int output2file;
   int verbose_flag;
   int max_settle;
   gsl_rng * rng;
@@ -30,6 +33,10 @@ typedef struct
   double erg_error;
   double mag;
   double mag_error;
+  double c;
+  double c_error;
+  double chi;
+  double chi_error;
 } datapoint;
 
 
