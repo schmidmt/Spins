@@ -145,7 +145,7 @@ neighbor(settings conf, int * loc, int * neigh , int num)
   return(0);
 }
 
-int *
+inline int *
 num_to_location(settings conf, int num, int * location)
 {
   int i,power;
@@ -162,7 +162,7 @@ num_to_location(settings conf, int num, int * location)
   return(location);
 }
 
-int
+inline int
 location_to_num ( settings conf, int * location )
 {
   int num = 0;

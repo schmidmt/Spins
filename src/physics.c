@@ -27,21 +27,6 @@
 #include <math.h>
 
 double
-magnetization2(gsl_vector ** lattice, settings conf, gsl_vector * mag_vector)
-{
-  int i;
-  gsl_vector_set_zero(mag_vector);
-  double result = 0;
-  double mag2 = 0;
-  for(i = 0 ; i < conf.elements ; i++)
-  {
-    gsl_blas_ddot(lattice[i],lattice[i],&result);
-    mag2 += result;
-  }
-  return(mag2/conf.elements);
-}
-
-double
 magnetization(gsl_vector ** lattice, settings conf, gsl_vector * mag_vector)
 {
   int i;
@@ -52,15 +37,10 @@ magnetization(gsl_vector ** lattice, settings conf, gsl_vector * mag_vector)
     gsl_vector_add(mag_vector,lattice[i]);
   }
   gsl_blas_ddot(mag_vector,mag_vector,&result);
-  /*
-  for(i = 0 ; i < conf.elements ; i++)
-  {
-    result += gsl_vector_get(lattice[i],0);
-  }
-  return(result);
-  */
+
   /* I have no idea why this is happening! */
   return(result/intpow(conf.elements,2));
+  //return(result);
 }
 
 
@@ -108,6 +88,7 @@ total_energy(gsl_vector ** lattice, settings conf)
 {
   int i;
   double energy = 0;
+  
   int * loc = (int *) malloc(conf.spacedims*sizeof(int));
   for(i = 0 ; i < conf.elements ; i++)
   { 
@@ -115,20 +96,6 @@ total_energy(gsl_vector ** lattice, settings conf)
     energy += local_energy(lattice,conf,loc)/2;
   }
   free(loc);
+  
   return(energy/conf.elements);
-}
-
-double
-total_energy2(gsl_vector ** lattice, settings conf)
-{
-  int i;
-  double energy2 = 0;
-  int * loc = (int *) malloc(conf.spacedims*sizeof(int));
-  for(i = 0 ; i < conf.elements ; i++)
-  { 
-    num_to_location(conf, i, loc);
-    energy2 += gsl_pow_2(local_energy(lattice,conf,loc)/2);
-  }
-  free(loc);
-  return(energy2/conf.elements);
 }

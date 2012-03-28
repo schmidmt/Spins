@@ -26,10 +26,10 @@ randomize_spins(gsl_vector ** lattice, settings conf );
 int 
 neighbor(settings conf, int * loc, int * neigh , int num);
 
-int *
+inline int *
 num_to_location(settings conf, int num, int * location);
 
-int
+inline int
 location_to_num(settings conf, int * location);
 
 

@@ -53,7 +53,7 @@ main (int argc, char **argv)
   int step,steps_of_beta;
   double beta, beta_start,beta_end,beta_step;
   FILE * outputfp;
-
+  datapoint data;
 
   const gsl_rng_type * RngType;
 
@@ -63,12 +63,6 @@ main (int argc, char **argv)
 
   gsl_vector ** lattice    = NULL;
   gsl_vector * mag_vector  = NULL ;
-
-
-  /* Physical Quantities */
-  double mag,mag_error,mag2,mag2_error;
-  double energy,energy_error,energy2,energy2_error;
-  double magsus,specheat;
 
   /* Libconf Stuff */
   config_t cfg;
@@ -124,12 +118,10 @@ main (int argc, char **argv)
    * Running Simulation *
    **********************/
   beta          = beta_start;
-  mag           = magnetization(lattice,conf,mag_vector);
-  energy        = total_energy(lattice,conf);
   steps_of_beta = (int) ceil((beta_end-beta_start)/beta_step);
   step          = 0;
   //                   1     2      3     4     5     6    7
-  fprintf(outputfp,"#%-11s %-13s %-13s %-13s %-13s %-13s %-13s\n","Beta","<m>","m err","<E>","E err","Specific Heat","Magnetic Susc");
+  fprintf(outputfp,"#%-13s %-13s %-13s %-13s %-13s %-13s %-13s\n","Beta","<m>","m err","<E>","E err","Specific Heat","Magnetic Susc");
 
   //mupdate(lattice,conf,beta,mag_vector,&mag,&mag_error,&energy,&energy_error);
   //print_lattice(lattice,conf);
@@ -142,13 +134,9 @@ main (int argc, char **argv)
     }
     fflush(stdout);
 
-    mupdate(lattice,conf,beta,mag_vector,&mag,&mag_error,&mag2,&mag2_error,&energy,&energy_error,&energy2,&energy2_error);
-    gsl_blas_ddot(mag_vector,mag_vector,&mag);
-    energy = total_energy(lattice,conf);
-    mag = magnetization(lattice,conf,mag_vector);
-    specheat = (energy2 - gsl_pow_2(energy/conf.elements));
-    magsus   = mag2 - gsl_pow_2(mag/conf.elements);
-    fprintf(outputfp,"%e %+e %+e %+e %+e %+e %+e\n",beta,fabs(mag)/conf.elements,mag_error/conf.elements,energy/conf.elements,energy_error/conf.elements,specheat/conf.elements,magsus/conf.elements);
+    data.mag=0;
+    mupdatebatch(lattice,conf,beta,&data);
+    fprintf(outputfp,"%+e %+e %+e %+e %+e %+e %+e %+e %+e\n",data.beta,data.mag,data.mag_error,data.erg,data.erg_error,data.c,data.c_error,data.chi,data.chi_error);
     beta += beta_step;
     step++;
   }

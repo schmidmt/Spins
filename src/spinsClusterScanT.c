@@ -129,6 +129,7 @@ main (int argc, char **argv)
       loadBar(step,steps_of_beta,50,80);
     }
     fflush(stdout);
+
     clusterupdatebatch(lattice,conf,beta,&data);
     fprintf(outputfp,"%+e %+e %+e %+e %+e %+e %+e %+e %+e\n",data.beta,data.mag,data.mag_error,data.erg,data.erg_error,data.c,data.c_error,data.chi,data.chi_error);
     beta += beta_step;
