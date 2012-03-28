@@ -4,6 +4,7 @@
 #include <math.h>
 #include <float.h>
 #include <gsl/gsl_rng.h>
+#include <gsl/gsl_vector.h>
 
 #define intpow(x,y) (int)pow(x,y)
 #define CRITT 1.0/0.6
@@ -25,6 +26,12 @@ typedef struct
   int block_size;
   int blocks;
 } settings;
+
+typedef struct
+{
+  gsl_vector * spin;
+  int * neighbors;
+} lattice_site;
 
 typedef struct
 {

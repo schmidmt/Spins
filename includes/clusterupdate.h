@@ -4,9 +4,9 @@
 #include <gsl/gsl_vector.h>
 #include <common.h>
 
-int gencluster(gsl_vector ** lattice, settings conf, int * loc , int * update_list, gsl_vector * base, double beta);
-int clusterupdate(gsl_vector ** lattice, settings conf, double beta);
-int clusterupdatebatch(gsl_vector ** lattice, settings conf, double beta, datapoint * data );
+int gencluster(lattice_site * lattice, settings conf, int * loc , int * update_list, gsl_vector * base, double beta);
+int clusterupdate(lattice_site * lattice, settings conf, double beta);
+int clusterupdatebatch(lattice_site * lattice, settings conf, double beta, datapoint * data );
 
 
 #endif /* !CLUSTERUPDATE_H */

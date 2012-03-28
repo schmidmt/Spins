@@ -30,10 +30,10 @@
 #include <physics.h>
 
 int
-mupdate_step(gsl_vector ** lattice, settings conf, double beta)
+mupdate_step(lattice_site * lattice, settings conf, double beta)
 {
   int i;
-  int * loc = (int *) malloc(conf.spacedims*sizeof(int));
+  int loc_id;
   double de,dep,sqrsum,random_num,exp_factor;
   gsl_vector * newspin = gsl_vector_alloc(conf.spindims);
 
@@ -50,13 +50,10 @@ mupdate_step(gsl_vector ** lattice, settings conf, double beta)
   gsl_vector_scale(newspin,1.0/sqrt(sqrsum));
 
   /* Choose a random location on the lattice */
-  for(i = 0 ; i < conf.spacedims ; i++)
-  {
-    loc[i] = gsl_rng_uniform_int(conf.rng,conf.sidelength);
-  }
+  loc_id = gsl_rng_uniform_int(conf.rng,conf.elements);
   
-  de  = local_energy(lattice,conf,loc);
-  dep = new_local_energy(lattice,conf,loc,newspin);
+  de  = local_energy(lattice,conf,loc_id);
+  dep = new_local_energy(lattice,conf,loc_id,newspin);
 
   exp_factor = -beta*(dep-de);
 
@@ -67,10 +64,9 @@ mupdate_step(gsl_vector ** lattice, settings conf, double beta)
 
   if(dep < de || (exp_factor > -10 && gsl_rng_uniform(conf.rng) < gsl_sf_exp(exp_factor)))
   {
-    gsl_vector_memcpy(lattice[location_to_num(conf,loc)],newspin);
+    gsl_vector_memcpy(lattice[loc_id].spin,newspin);
   }
 
-  free(loc);
   gsl_vector_free(newspin);
   newspin = NULL;
   return(0);
@@ -79,7 +75,7 @@ mupdate_step(gsl_vector ** lattice, settings conf, double beta)
 /* mupdate: Thermalizes lattice and calculates errors.
  */
 int
-mupdatebatch(gsl_vector ** lattice, settings conf, double beta, datapoint * data)
+mupdatebatch(lattice_site * lattice, settings conf, double beta, datapoint * data)
 {
   int i,j;
   double * e_block, * m_block, * e_block_avg, * m_block_avg, \

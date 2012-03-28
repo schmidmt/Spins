@@ -27,14 +27,14 @@
 #include <math.h>
 
 double
-magnetization(gsl_vector ** lattice, settings conf, gsl_vector * mag_vector)
+magnetization(lattice_site * lattice, settings conf, gsl_vector * mag_vector)
 {
   int i;
   gsl_vector_set_zero(mag_vector);
   double result = 0;
   for(i = 0 ; i < conf.elements ; i++)
   {
-    gsl_vector_add(mag_vector,lattice[i]);
+    gsl_vector_add(mag_vector,lattice[i].spin);
   }
   gsl_blas_ddot(mag_vector,mag_vector,&result);
 
@@ -45,57 +45,52 @@ magnetization(gsl_vector ** lattice, settings conf, gsl_vector * mag_vector)
 
 
 double
-local_energy (gsl_vector ** lattice, settings conf, int * loc)
+local_energy (lattice_site * lattice, settings conf, int loc_id)
 {
   double energy = 0,result;
-  int i,primary,secondary;
-  int * neigh    = (int *) malloc(conf.spacedims*sizeof(int));
-  primary = location_to_num(conf,loc);
+  int i,secondary;
 
   for(i = 0 ; i < 2*(conf.spacedims) ; i++)
   {
-    neighbor(conf,loc,neigh,i);
-    secondary = location_to_num(conf,neigh);
-    gsl_blas_ddot(lattice[primary],lattice[secondary],&result);
+    secondary = lattice[loc_id].neighbors[i];
+    gsl_blas_ddot(lattice[loc_id].spin,lattice[secondary].spin,&result);
     energy -= result;
   }
-  free(neigh);
   //return(energy/(intpow(sidelength,spacedims)));
   return(energy);
 }
 
 
 double
-new_local_energy (gsl_vector ** lattice, settings conf, int * loc, gsl_vector * new)
+new_local_energy (lattice_site * lattice, settings conf, int loc_id, gsl_vector * new)
 {
   double energy = 0,result;
   int i,secondary;
-  int * neigh    = (int *) malloc(conf.spacedims*sizeof(int));
   
   for(i = 0 ; i < 2*(conf.spacedims) ; i++)
   {
-    neighbor(conf,loc,neigh,i);
-    secondary = location_to_num(conf,neigh);
-    gsl_blas_ddot(new,lattice[secondary],&result);
+    secondary = lattice[loc_id].neighbors[i];
+    gsl_blas_ddot(new,lattice[secondary].spin,&result);
     energy -= result;
   }
-  free(neigh);
   return(energy);
 }
 
 double
-total_energy(gsl_vector ** lattice, settings conf)
+total_energy(lattice_site * lattice, settings conf)
 {
-  int i;
-  double energy = 0;
-  
-  int * loc = (int *) malloc(conf.spacedims*sizeof(int));
-  for(i = 0 ; i < conf.elements ; i++)
-  { 
-    num_to_location(conf, i, loc);
-    energy += local_energy(lattice,conf,loc)/2;
+  double energy = 0,result;
+  int i,j,secondary;
+
+  for(j = 0 ; j < conf.elements ; j++)
+  {
+    for(i = 0 ; i < 2*(conf.spacedims) ; i += 2)
+    {
+      secondary = lattice[j].neighbors[i];
+      gsl_blas_ddot(lattice[j].spin,lattice[secondary].spin,&result);
+      energy -= result;
+    }
   }
-  free(loc);
   
   return(energy/conf.elements);
 }

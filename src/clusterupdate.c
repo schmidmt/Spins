@@ -40,7 +40,7 @@
  * as error estimates.
  *******************************************************************************/
 int
-clusterupdatebatch(gsl_vector ** lattice, settings conf, double beta, datapoint * data )
+clusterupdatebatch(lattice_site * lattice, settings conf, double beta, datapoint * data )
 {
   int i,j;
   double * e_block, * m_block, * e_block_avg, * m_block_avg, \
@@ -102,7 +102,7 @@ clusterupdatebatch(gsl_vector ** lattice, settings conf, double beta, datapoint 
  * clusterupdate: Runs the Wolff algorithm on lattice.
  ******************************************************************************/
 int
-clusterupdate(gsl_vector ** lattice, settings conf, double beta)
+clusterupdate(lattice_site * lattice, settings conf, double beta)
 {
   int j,cluster_size;
   gsl_vector * base, * delta;
@@ -141,10 +141,10 @@ clusterupdate(gsl_vector ** lattice, settings conf, double beta)
   {
     if(update_list[j] == 1)
     {
-      gsl_blas_ddot(lattice[j],base,&scale);
+      gsl_blas_ddot(lattice[j].spin,base,&scale);
       gsl_vector_memcpy(delta,base);
       gsl_vector_scale(delta,-2.0*scale);
-      gsl_vector_add(lattice[j],delta);
+      gsl_vector_add(lattice[j].spin,delta);
     }
   }
 
@@ -158,20 +158,20 @@ clusterupdate(gsl_vector ** lattice, settings conf, double beta)
  * gencluster: recursivily calls itself and returns a set of lattice points.
  ******************************************************************************/
 int
-gencluster(gsl_vector ** lattice, settings conf, int * loc , int * update_list, gsl_vector * base, double beta)
+gencluster(lattice_site * lattice, settings conf, int * loc , int * update_list, gsl_vector * base, double beta)
 {
+  int loc_id = location_to_num(conf,loc);
   int i,update_count = 0;
   int * neigh = (int *) malloc(conf.spacedims*sizeof(int));
   double exp_factor,s1n,s2n;
 
   for(i = 0 ; i < 2*conf.spacedims ; i++)
   {
-    neighbor(conf,loc,neigh,i);
     //Continue on if the point has already been checked.
-    if(update_list[location_to_num(conf,neigh)] != 0)
+    if(update_list[lattice[loc_id].neighbors[i]] != 0)
       continue;
-    gsl_blas_ddot(lattice[location_to_num(conf,loc)],base,&s1n);
-    gsl_blas_ddot(lattice[location_to_num(conf,neigh)],base,&s2n);
+    gsl_blas_ddot(lattice[lattice[loc_id].neighbors[i]].spin,base,&s1n);
+    gsl_blas_ddot(lattice[lattice[loc_id].neighbors[i]].spin,base,&s2n);
     exp_factor = -2.0*s1n*s2n*beta;
   
     if(exp_factor > -10 && gsl_rng_uniform(conf.rng) < 1-gsl_sf_exp(exp_factor))

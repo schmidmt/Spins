@@ -61,7 +61,7 @@ main (int argc, char **argv)
   RngType = gsl_rng_default;
   conf.rng = gsl_rng_alloc (RngType);
 
-  gsl_vector ** lattice    = NULL;
+  lattice_site * lattice   = NULL;
   gsl_vector * mag_vector  = NULL ;
 
   /* Libconf Stuff */

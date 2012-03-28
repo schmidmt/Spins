@@ -28,26 +28,32 @@
 #include <stdlib.h>
 #include <string.h>
 
-gsl_vector **
-allocate_lattice (settings conf)
+lattice_site *
+allocate_lattice(settings conf)
 {
-  int i;
-  gsl_vector ** lattice = (gsl_vector **) malloc(conf.elements*sizeof(gsl_vector *));
+  int i,j;
+  lattice_site * lattice = (lattice_site *) malloc(conf.elements*sizeof(lattice_site));
   for ( i = 0 ; i < conf.elements ; i++ )
   {
-    lattice[i] =  (gsl_vector *) gsl_vector_alloc (conf.spindims);
+    lattice[i].spin      = (gsl_vector *) gsl_vector_alloc (conf.spindims);
+    lattice[i].neighbors = (int *) malloc(2*conf.spacedims*sizeof(int));
+    for(j = 0 ; j < 2*conf.spacedims ; j++)
+    {
+      lattice[i].neighbors[j] = get_neighbor_id(conf,i,j);
+    }
   }
   return(lattice);
 }
 
 
 int
-free_lattice ( gsl_vector ** lattice , settings conf )
+free_lattice ( lattice_site * lattice , settings conf )
 {
   int i;
   for ( i = 0 ; i < conf.elements ; i++ )
   {
-    gsl_vector_free(lattice[i]);
+    gsl_vector_free(lattice[i].spin);
+    free(lattice[i].neighbors);
   }
   free(lattice);
   lattice = NULL;
@@ -55,7 +61,7 @@ free_lattice ( gsl_vector ** lattice , settings conf )
 }
 
 void
-print_lattice (gsl_vector ** lattice, settings conf )
+print_lattice (lattice_site * lattice, settings conf )
 {
   int i,j;
   int * location = (int *) malloc(conf.spacedims*sizeof(int));
@@ -69,38 +75,38 @@ print_lattice (gsl_vector ** lattice, settings conf )
     }
     printf(" ) -> ( ");
     for(j = 0 ; j < conf.spindims ; j++)
-      printf("%e ",gsl_vector_get (lattice[i], j));
+      printf("%e ",gsl_vector_get (lattice[i].spin, j));
     printf(")\n");
   }
   free(location);
 }
 
 void
-set_homogenious_spins(gsl_vector ** lattice, settings conf )
+set_homogenious_spins(lattice_site * lattice, settings conf )
 {
   int i;
   for(i = 0 ; i < conf.elements ; i++)
   {
-    gsl_vector_set_basis(lattice[i],0);
+    gsl_vector_set_basis(lattice[i].spin,0);
   }
 }
 
 void
-set_checkerboard_spins(gsl_vector ** lattice, settings conf)
+set_checkerboard_spins(lattice_site * lattice, settings conf)
 {
   int i;
   for(i = 0 ; i < conf.elements ; i++)
   {
-    gsl_vector_set_basis(lattice[i],0);
+    gsl_vector_set_basis(lattice[i].spin,0);
     if(i % 2 == 1)
     {
-      gsl_vector_scale(lattice[i],-1.0);
+      gsl_vector_scale(lattice[i].spin,-1.0);
     }
   }
 }
 
 void
-randomize_spins(gsl_vector ** lattice, settings conf )
+randomize_spins(lattice_site * lattice, settings conf )
 {
   int i,j;
   double sqrsum,random_num;
@@ -111,11 +117,40 @@ randomize_spins(gsl_vector ** lattice, settings conf )
     for(j = 0 ; j < conf.spindims ; j++)
     {
       random_num = 2*(gsl_rng_uniform(conf.rng)-0.5);
-      gsl_vector_set(lattice[i],j,random_num);
+      gsl_vector_set(lattice[i].spin,j,random_num);
       sqrsum += gsl_pow_2(random_num);
     }
-    gsl_vector_scale(lattice[i],1.0/sqrt(sqrsum));
+    gsl_vector_scale(lattice[i].spin,1.0/sqrt(sqrsum));
   }
+}
+
+int
+get_neighbor_id(settings conf, int site_id, int num)
+{
+  int neigh_id;
+  int * neigh = (int *) calloc(conf.spacedims,sizeof(int));
+  int dir = 0, ind = 0;
+  if((num & 1) == 0)
+    dir = -1;
+  else
+    dir = 1;
+    
+  ind = div(num,2).quot;
+  if(ind >= conf.spacedims)
+  {
+    fprintf(stderr,"Trying to find index out of range...\n");
+    exit(EXIT_FAILURE);
+  }
+
+  neigh[ind] += dir;
+  if(neigh[ind] < 0)
+    neigh[ind] += conf.sidelength;
+  if(neigh[ind] >= conf.sidelength)
+    neigh[ind] += -(conf.sidelength);
+  
+  neigh_id = location_to_num(conf,neigh);
+  free(neigh);
+  return(neigh_id);
 }
 
 int 

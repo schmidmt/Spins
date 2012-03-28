@@ -2,15 +2,15 @@
 #define PHYSICS_H 1
 
 double
-magnetization(gsl_vector ** lattice, settings conf, gsl_vector * magnet);
+magnetization(lattice_site * lattice, settings conf, gsl_vector * magnet);
 
 double
-local_energy (gsl_vector ** lattice, settings conf, int * loc);
+local_energy (lattice_site * lattice, settings conf, int loc_id);
 
 double
-new_local_energy (gsl_vector ** lattice, settings conf, int * loc, gsl_vector * new);
+new_local_energy (lattice_site * lattice, settings conf, int loc_id, gsl_vector * new);
 
 double
-total_energy(gsl_vector ** lattice, settings conf);
+total_energy(lattice_site * lattice, settings conf);
 
 #endif /* !PHYSICS_H */

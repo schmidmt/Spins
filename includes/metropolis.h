@@ -6,9 +6,9 @@
 #include <common.h>
 
 int
-mupdate_step( gsl_vector ** lattice, settings conf, double beta);
+mupdate_step( lattice_site * lattice, settings conf, double beta);
 
 int
-mupdatebatch(gsl_vector ** lattice, settings conf, double beta, datapoint * data);
+mupdatebatch(lattice_site * lattice, settings conf, double beta, datapoint * data);
 
 #endif /* !METROPOLIS_H */

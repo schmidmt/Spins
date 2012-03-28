@@ -5,26 +5,29 @@
 #include <gsl/gsl_rng.h>
 #include <common.h>
 
-gsl_vector **
+lattice_site *
 allocate_lattice (settings conf);
 
 int
-free_lattice ( gsl_vector ** lattice , settings conf );
+free_lattice ( lattice_site * lattice , settings conf );
 
 void
-print_lattice (gsl_vector ** lattice, settings conf );
+print_lattice (lattice_site * lattice, settings conf );
 
 void
-set_homogenious_spins(gsl_vector ** lattice, settings conf );
+set_homogenious_spins(lattice_site * lattice, settings conf );
 
 void
-set_checkerboard_spins(gsl_vector ** lattice, settings conf);
+set_checkerboard_spins(lattice_site * lattice, settings conf);
+
+int
+get_neighbor_id(settings conf, int site_id, int num);
 
 void
-randomize_spins(gsl_vector ** lattice, settings conf );
+randomize_spins(lattice_site * lattice, settings conf );
 
 int 
-neighbor(settings conf, int * loc, int * neigh , int num);
+find_neighbors(settings conf, int * loc, int * neigh , int num);
 
 inline int *
 num_to_location(settings conf, int num, int * location);
