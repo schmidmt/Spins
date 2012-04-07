@@ -98,7 +98,6 @@ main (int argc, char **argv)
   if(conf.verbose_flag)
     fprintf(stderr,"#Allocated %d points on the lattice\n",conf.elements);
   
-  
   if(random_spins == 1)
   {
     if(conf.verbose_flag)
@@ -141,12 +140,13 @@ main (int argc, char **argv)
   for(i = 0 ; i < beta_data_points ; i++)
   {
     loadBar(i,beta_data_points,50,80);
-    clusterupdatebatch(lattice,conf,1.0/beta,&data);
+    //clusterupdatebatch(lattice,conf,beta,&data);
+    mupdatebatch(lattice,conf,beta,&data);
     tau_log[i]       = gsl_sf_log(fabs(1-CRITB/beta));
     c_log[i]         = gsl_sf_log(data.c);
     c_error_log[i]   = 1.0/gsl_pow_2(gsl_sf_log(data.c_error));
     m_log[i]         = gsl_sf_log(data.mag);
-    m_error_log[i]   = 1.0/gsl_pow_2(gsl_sf_log(data.mag_error));
+    m_error_log[i]   = 1.0/gsl_pow_2(gsl_sf_log(fabs(data.mag_error)));
     chi_log[i]       = gsl_sf_log(data.chi);
     chi_error_log[i] = 1.0/gsl_pow_2(gsl_sf_log(data.chi_error));
 

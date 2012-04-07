@@ -42,17 +42,7 @@ int
 main (int argc, char **argv)
 {
   settings conf;
-  static int specified_file_flag = 0;
-  static int verbose_flag = 0;
-  char conf_file[PATH_MAX + NAME_MAX];
-  char outputfile_name[PATH_MAX + NAME_MAX];
-  int c; /* Output status for getopt*/
-  int useclud,random_spins;
-  int rng_seed;
-  int i,j;
-  int step,steps_of_beta;
-  double beta, beta_start,beta_end,beta_step;
-  FILE * outputfp;
+  double beta_step, beta_start, beta;
   datapoint data;
 
   const gsl_rng_type * RngType;
@@ -64,18 +54,18 @@ main (int argc, char **argv)
   lattice_site * lattice   = NULL;
   gsl_vector * mag_vector  = NULL ;
 
-  /* Libconf Stuff */
-  config_t cfg;
-  //config_setting_t *setting;
-  const char *str;
 
-  config_init(&cfg);
+  /************
+   * SETTINGS *
+   ************/
+  conf.spindims   = 2;
+  conf.spacedims  = 2;
+  conf.sidelength = 32;
+  conf.max_settle  = 10000;
+  conf.block_size = 10000;
+  conf.blocks     = 100;
+  conf.verbose_flag = 0;
 
-
-  /*******************************************************************
-   * This file includes all of the argv and conf file parsing stuff. *
-   *******************************************************************/
-  #include "conf_file_parser.c"
 
   /*************************************
    * ALLOCATION OF LATTICE AND VECTORS *
@@ -95,19 +85,7 @@ main (int argc, char **argv)
     fprintf(stderr,"#Allocated %d points on the lattice\n",conf.elements);
   
   
-  if(random_spins == 1)
-  {
-    if(conf.verbose_flag)
-      fprintf(stderr,"Randomizing Spins\n");
-    randomize_spins(lattice,conf);
-  }
-  else
-  {
-    if(conf.verbose_flag)
-      fprintf(stderr,"Setting Homogenious Spins\n");
-    set_homogenious_spins(lattice,conf);
-    //set_checkerboard_spins(lattice,sidelength,conf.spacedims,conf.spindims);
-  }
+  randomize_spins(lattice,conf);
 
   /* if(conf.verbose_flag) 
     print_lattice (lattice,sidelength,conf.spacedims,conf.spindims); */
@@ -117,31 +95,36 @@ main (int argc, char **argv)
   /**********************
    * Running Simulation *
    **********************/
-  beta          = beta_start;
-  steps_of_beta = (int) ceil((beta_end-beta_start)/beta_step);
-  step          = 0;
-  //                   1     2      3     4     5     6    7
-  fprintf(outputfp,"#%-13s %-13s %-13s %-13s %-13s %-13s %-13s\n","Beta","<m>","m err","<E>","E err","Specific Heat","Magnetic Susc");
-
-  //mupdate(lattice,conf,beta,mag_vector,&mag,&mag_error,&energy,&energy_error);
-  //print_lattice(lattice,conf);
-  printf("#Starting simulation\n\n");
-  while(step <= steps_of_beta)
+  double err = 100;
+  double firstd, secondd;
+  double var_l, var_c, var_r;
+  beta_start      = 0.3;
+  beta_step       = 0.1;
+  double dbeta;
+  beta = beta_start;
+  while(err > 0.01)
   {
-    if(!conf.verbose_flag)
-    {
-      loadBar(step,steps_of_beta,50,80);
-    }
-    fflush(stdout);
+    //Find first derivative
+    mupdatebatch(lattice,conf,beta-(beta_step/2.0),&data);
+    var_l = data.c;
+    mupdatebatch(lattice,conf,beta+(beta_step/2.0),&data);
+    var_r = data.c;
+    firstd = (var_r-var_l)/beta_step; 
 
+    //Find second derivative
+    mupdatebatch(lattice,conf,beta-beta_step,&data);
+    var_l = data.c;
     mupdatebatch(lattice,conf,beta,&data);
-    fprintf(outputfp,"%+e %+e %+e %+e %+e %+e %+e %+e %+e\n",data.beta,data.mag,data.mag_error,data.erg,data.erg_error,data.c,data.c_error,data.chi,data.chi_error);
-    beta += beta_step;
-    step++;
+    var_c = data.c;
+    mupdatebatch(lattice,conf,beta+beta_step,&data);
+    var_r = data.c;
+    secondd = (var_l+var_r-2*var_c)/pow(beta_step,2); 
+    
+    dbeta = firstd/secondd;
+    err = fabs(dbeta);
+    beta = beta - dbeta;
+    printf("Beta Est = %g  Err = %g\n",beta,err);
   }
-  //printf("\n");
-  //
-  //print_lattice(lattice,conf);
 
   /***********
    * CLEANUP *
@@ -152,7 +135,6 @@ main (int argc, char **argv)
   location = NULL;
   free(neigh);
   neigh = NULL;
-  fclose(outputfp);
 
   /* Free GSL Random Num Generator*/
   gsl_rng_free (conf.rng);

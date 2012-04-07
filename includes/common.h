@@ -7,8 +7,8 @@
 #include <gsl/gsl_vector.h>
 
 #define intpow(x,y) (int)pow(x,y)
-#define CRITT 1.0/0.6
-#define CRITB 0.6
+#define CRITT 1.0/0.44
+#define CRITB 0.44
 
 typedef struct
 {

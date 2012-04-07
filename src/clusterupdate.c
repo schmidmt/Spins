@@ -104,9 +104,9 @@ clusterupdatebatch(lattice_site * lattice, settings conf, double beta, datapoint
 int
 clusterupdate(lattice_site * lattice, settings conf, double beta)
 {
-  int j,cluster_size;
+  int j,cluster_size, update_start;
   gsl_vector * base, * delta;
-  int * update_start, * update_list;
+  int * update_list;
   double scale;
 
   base  = gsl_vector_alloc(conf.spindims);
@@ -129,8 +129,8 @@ clusterupdate(lattice_site * lattice, settings conf, double beta)
   gsl_vector_scale(base,1.0/sqrt(sqrsum));
   
   //Pick a random point on the lattice then pass off to gencluster
-  num_to_location(conf,gsl_rng_uniform_int(conf.rng,conf.elements),update_start);
-  update_list[location_to_num(conf,update_start)] = 1;
+  update_start = gsl_rng_uniform_int(conf.rng,conf.elements);
+  update_list[update_start] = 1;
   
   //Pass off to gencluster
   cluster_size = gencluster(lattice,conf,update_start,update_list,base,beta);
@@ -149,7 +149,6 @@ clusterupdate(lattice_site * lattice, settings conf, double beta)
   }
 
   gsl_vector_free(base);
-  free(update_start);
   free(update_list);
   return(cluster_size);
 }
@@ -158,11 +157,9 @@ clusterupdate(lattice_site * lattice, settings conf, double beta)
  * gencluster: recursivily calls itself and returns a set of lattice points.
  ******************************************************************************/
 int
-gencluster(lattice_site * lattice, settings conf, int * loc , int * update_list, gsl_vector * base, double beta)
+gencluster(lattice_site * lattice, settings conf, int loc_id , int * update_list, gsl_vector * base, double beta)
 {
-  int loc_id = location_to_num(conf,loc);
   int i,update_count = 0;
-  int * neigh = (int *) malloc(conf.spacedims*sizeof(int));
   double exp_factor,s1n,s2n;
 
   for(i = 0 ; i < 2*conf.spacedims ; i++)
@@ -170,22 +167,20 @@ gencluster(lattice_site * lattice, settings conf, int * loc , int * update_list,
     //Continue on if the point has already been checked.
     if(update_list[lattice[loc_id].neighbors[i]] != 0)
       continue;
-    gsl_blas_ddot(lattice[lattice[loc_id].neighbors[i]].spin,base,&s1n);
+    gsl_blas_ddot(lattice[loc_id].spin,base,&s1n);
     gsl_blas_ddot(lattice[lattice[loc_id].neighbors[i]].spin,base,&s2n);
     exp_factor = -2.0*s1n*s2n*beta;
   
     if(exp_factor > -10 && gsl_rng_uniform(conf.rng) < 1-gsl_sf_exp(exp_factor))
     {
-      update_list[location_to_num(conf,neigh)] = 1;
+      update_list[loc_id] = 1;
       update_count += 1;
-      update_count += gencluster(lattice,conf,neigh,update_list,base,beta);
+      update_count += gencluster(lattice,conf,lattice[loc_id].neighbors[i],update_list,base,beta);
     }
     else
     {
-      update_list[location_to_num(conf,neigh)] = -1;
+      update_list[loc_id] = -1;
     }
   }
-  
-  free(neigh);
   return(update_count);
 }
