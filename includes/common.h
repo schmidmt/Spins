@@ -55,5 +55,13 @@ enqueue(double * array, int size, double new);
 inline void
 loadBar(int x, int n, int r, int w);
 
+void
+print_data( FILE * fh, datapoint data);
+
+inline void
+unit_vec(gsl_vector * vect, gsl_rng * rng);
+
+inline void
+print_vec(gsl_vector * vect, char * name);
 
 #endif /* !COMMON_H */

@@ -142,6 +142,9 @@ get_neighbor_id(settings conf, int site_id, int num)
     exit(EXIT_FAILURE);
   }
 
+
+  num_to_location(conf,site_id,neigh);
+  
   neigh[ind] += dir;
   if(neigh[ind] < 0)
     neigh[ind] += conf.sidelength;

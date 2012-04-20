@@ -60,10 +60,10 @@ main (int argc, char **argv)
    ************/
   conf.spindims   = 2;
   conf.spacedims  = 2;
-  conf.sidelength = 32;
-  conf.max_settle  = 10000;
-  conf.block_size = 10000;
-  conf.blocks     = 100;
+  conf.sidelength = 8;
+  conf.max_settle  = 100;
+  conf.block_size = 100;
+  conf.blocks     = 20;
   conf.verbose_flag = 0;
 
 
@@ -98,11 +98,11 @@ main (int argc, char **argv)
   double err = 100;
   double firstd, secondd;
   double var_l, var_c, var_r;
-  beta_start      = 0.3;
-  beta_step       = 0.1;
+  beta_start      = 0.4;
+  beta_step       = 0.0001;
   double dbeta;
   beta = beta_start;
-  while(err > 0.01)
+  while(err > 0.0001)
   {
     //Find first derivative
     mupdatebatch(lattice,conf,beta-(beta_step/2.0),&data);

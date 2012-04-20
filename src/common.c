@@ -20,6 +20,9 @@
 
 #include <common.h>
 #include <stdio.h>
+#include <gsl/gsl_vector.h>
+#include <gsl/gsl_rng.h>
+#include <gsl/gsl_math.h>
 
 void
 enqueue(double * array, int size, double new)
@@ -67,4 +70,43 @@ loadBar(int x, int n, int r, int w)
     printf(" ");
 
   printf("]\n");
+}
+
+void
+print_data(FILE * fh, datapoint data)
+{
+  fprintf(fh,"%+e %+e %+e %+e %+e %+e %+e %+e %+e\n",data.beta,data.mag,data.mag_error,data.erg,data.erg_error,data.c,data.c_error,data.chi,data.chi_error);
+}
+
+
+inline void
+unit_vec(gsl_vector * vect , gsl_rng * rng )
+{
+  double sqrsum = 0, random_num;
+  int j;
+
+  for(j = 0 ; j < vect->size ; j++)
+  {
+    random_num = 2*(gsl_rng_uniform(rng)-0.5);
+    gsl_vector_set(vect,j,random_num);
+    sqrsum += gsl_pow_2(random_num);
+  }
+  gsl_vector_scale(vect,1.0/sqrt(sqrsum));
+}
+
+void
+print_vec(gsl_vector * vect, char * name)
+{
+  int i;
+  printf("%s = [ ",name);
+  i = 0;
+  if( (int)vect->size > 1 )
+  {
+    for(i = 0 ; i < ((int)vect->size-1) ; i++)
+    {
+      printf("%+e, ",gsl_vector_get(vect,i));
+    }
+    i++;
+  }
+  printf("%+e ]\n",gsl_vector_get(vect,i));
 }

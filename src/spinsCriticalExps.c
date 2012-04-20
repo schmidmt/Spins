@@ -27,6 +27,7 @@
 #include <limits.h>
 #include <string.h>
 #include <clusterupdate.h>
+#include <metropolis.h>
 #include <gsl/gsl_vector.h>
 #include <gsl/gsl_rng.h>
 #include <gsl/gsl_math.h>

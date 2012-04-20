@@ -63,6 +63,7 @@ clusterupdatebatch(lattice_site * lattice, settings conf, double beta, datapoint
   {
    clusterupdate(lattice,conf,beta);
   }
+
   //Get averages and stdev for messurements
   for(i = 0 ; i < conf.blocks ; i++)
   {
@@ -104,36 +105,29 @@ clusterupdatebatch(lattice_site * lattice, settings conf, double beta, datapoint
 int
 clusterupdate(lattice_site * lattice, settings conf, double beta)
 {
-  int j,cluster_size, update_start;
+  int i,j,cluster_size, update_start;
   gsl_vector * base, * delta;
   int * update_list;
+  int ** bonds;
   double scale;
 
-  base  = gsl_vector_alloc(conf.spindims);
-  delta = gsl_vector_alloc(conf.spindims);
-  update_list  = (int *) calloc(conf.elements,sizeof(int));
-  /*********************************************************
-   * This might throw off detail ballance! Ask about this! *
-   *********************************************************/
-  update_start = (int *) malloc(conf.spacedims*sizeof(int));
-  double sqrsum = 0, random_num;
+  base  = gsl_vector_alloc(conf.spindims); /* Direction to switch over */
+  delta = gsl_vector_alloc(conf.spindims); /* How much to change a vector */
+  update_list = (int *) calloc(conf.elements,sizeof(int));   /* List of Lattice points to switch */
+  bonds       = (int **) malloc(conf.elements*sizeof(int*)); /* Bonds Matrix to make sure bonds aren't rechecked. */
 
-  //Generate a random unit vector
-  sqrsum = 0;
-  for(j = 0 ; j < conf.spindims ; j++)
-  {
-    random_num = 2*(gsl_rng_uniform(conf.rng)-0.5);
-    gsl_vector_set(base,j,random_num);
-    sqrsum += gsl_pow_2(random_num);
-  }
-  gsl_vector_scale(base,1.0/sqrt(sqrsum));
-  
+  for(i = 0 ; i < conf.elements ; i++)
+    bonds[i]  = (int *) calloc(conf.elements,sizeof(int));
+
+  /* Generate a random unit vector to set as base */
+  unit_vec(base,conf.rng);
+
   //Pick a random point on the lattice then pass off to gencluster
   update_start = gsl_rng_uniform_int(conf.rng,conf.elements);
   update_list[update_start] = 1;
   
   //Pass off to gencluster
-  cluster_size = gencluster(lattice,conf,update_start,update_list,base,beta);
+  cluster_size = gencluster(lattice,conf,update_start,update_list,bonds,base,beta);
   cluster_size++; //So it will include the first element
   
   //Flip the entire cluster
@@ -149,7 +143,11 @@ clusterupdate(lattice_site * lattice, settings conf, double beta)
   }
 
   gsl_vector_free(base);
+  gsl_vector_free(delta);
   free(update_list);
+  for(i = 0 ; i < conf.elements ; i++)
+    free(bonds[i]);
+  free(bonds);
   return(cluster_size);
 }
 
@@ -157,29 +155,35 @@ clusterupdate(lattice_site * lattice, settings conf, double beta)
  * gencluster: recursivily calls itself and returns a set of lattice points.
  ******************************************************************************/
 int
-gencluster(lattice_site * lattice, settings conf, int loc_id , int * update_list, gsl_vector * base, double beta)
+gencluster(lattice_site * lattice, settings conf, int loc_id , int * update_list, int ** bonds, gsl_vector * base, double beta)
 {
   int i,update_count = 0;
   double exp_factor,s1n,s2n;
+  int nid;
 
   for(i = 0 ; i < 2*conf.spacedims ; i++)
   {
-    //Continue on if the point has already been checked.
-    if(update_list[lattice[loc_id].neighbors[i]] != 0)
+    nid = lattice[loc_id].neighbors[i]; /* Neighbor ID */
+    //Continue on if the point has already been added
+    //  or if bond has already been checked.
+    if(update_list[nid] == 1 || bonds[loc_id][nid] != 0)
       continue;
     gsl_blas_ddot(lattice[loc_id].spin,base,&s1n);
-    gsl_blas_ddot(lattice[lattice[loc_id].neighbors[i]].spin,base,&s2n);
+    gsl_blas_ddot(lattice[nid].spin,base,&s2n);
     exp_factor = -2.0*s1n*s2n*beta;
   
     if(exp_factor > -10 && gsl_rng_uniform(conf.rng) < 1-gsl_sf_exp(exp_factor))
     {
-      update_list[loc_id] = 1;
-      update_count += 1;
-      update_count += gencluster(lattice,conf,lattice[loc_id].neighbors[i],update_list,base,beta);
+      update_list[nid] = 1; /* Set to be flipped */
+      update_count += 1;    
+      bonds[loc_id][nid] = 1; /* Prevent link from being checked again */
+      bonds[nid][loc_id] = 1;
+      update_count += gencluster(lattice,conf,nid,update_list,bonds,base,beta);
     }
     else
     {
-      update_list[loc_id] = -1;
+      bonds[loc_id][nid] = -1; /* If not added keep this link from being made again */
+      bonds[nid][loc_id] = -1;
     }
   }
   return(update_count);
