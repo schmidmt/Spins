@@ -9,4 +9,4 @@ set grid
 set title "Energy of Ising Model"
 set xlabel "beta"
 set ylabel "<E>"
-plot "example2.dat" using 1:4:5 with errorbars, "example2.dat" using 1:4 with lines
+plot "32x32.dat" using 1:4:5 with errorbars, "32x32.dat" using 1:4 with lines

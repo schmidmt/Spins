@@ -9,4 +9,4 @@ set grid
 set title "Specific Heat of Ising Model"
 set xlabel "beta"
 set ylabel "c"
-plot "example2.dat" using 1:8:9 with errorbars, "example2.dat" using 1:8 with lines
+plot "32x32.dat" using 1:8:9 with errorbars, "32x32.dat" using 1:8 with lines

@@ -77,7 +77,7 @@ clusterupdatebatch(lattice_site * lattice, settings conf, double beta, datapoint
     e_block_error[i] = gsl_stats_sd(e_block,1,conf.block_size);
     m_block_avg[i]   = gsl_stats_mean(m_block,1,conf.block_size);
     m_block_error[i] = gsl_stats_sd(m_block,1,conf.block_size);
-    c_block[i]       = beta*gsl_pow_2(e_block_error[i]);
+    c_block[i]       = gsl_pow_2(beta)*gsl_pow_2(e_block_error[i]);
     chi_block[i]     = beta*gsl_pow_2(m_block_error[i]);
   }
   (*data).beta      = beta;

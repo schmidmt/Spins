@@ -9,4 +9,4 @@ set grid
 set title "Magnetic Susceptability of Ising Model"
 set xlabel "beta"
 set ylabel "X"
-plot "example2.dat" using 1:6:7 with errorbars, "example2.dat" using 1:6 with lines
+plot "32x32.dat" using 1:6:7 with errorbars, "32x32.dat" using 1:6 with lines

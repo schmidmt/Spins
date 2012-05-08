@@ -9,4 +9,4 @@ set grid
 set title "Magnetization of Ising Model"
 set xlabel "beta"
 set ylabel "<m>"
-plot "example2.dat" using 1:2:3 with errorbars, "example2.dat" using 1:2 with lines
+plot "32x32.dat" using 1:2:3 with errorbars, "32x32.dat" using 1:2 with lines

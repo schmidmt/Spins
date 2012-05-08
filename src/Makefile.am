@@ -16,7 +16,7 @@
 #    along with spins.  If not, see <http://www.gnu.org/licenses/>.
 
 
-bin_PROGRAMS = spinsMetropolisScanT spinsClusterScanT spinsClusterSingleBeta spinsCriticalExps spinsFindCrit
+bin_PROGRAMS = spinsMetropolisScanT spinsClusterScanT spinsClusterSingleBeta spinsCriticalExps spinsFindCrit spinsClusterBlocking
 
 spinsMetropolisScanT_SOURCES = spinsMetropolisScanT.c clusterupdate.c metropolis.c lattice.c common.c physics.c
 spinsMetropolisScanT_CFLAGS = -pg -Wall  -DHAVE_INLINE
@@ -28,10 +28,13 @@ spinsClusterSingleBeta_SOURCES = spinsClusterSingleBeta.c clusterupdate.c lattic
 spinsClusterSingleBeta_CFLAGS = -pg -Wall  -DHAVE_INLINE
 
 spinsCriticalExps_SOURCES = spinsCriticalExps.c clusterupdate.c lattice.c common.c physics.c metropolis.c
-spinsCriticalExps_CFLAGS = -pg -Wall  -DHAVE_INLINe
+spinsCriticalExps_CFLAGS = -pg -Wall  -DHAVE_INLINE
 
 spinsFindCrit_SOURCES = spinsFindCrit.c clusterupdate.c lattice.c common.c physics.c metropolis.c
-spinsFindCrit_CFLAGS = -pg -Wall  -DHAVE_INLINe
+spinsFindCrit_CFLAGS = -pg -Wall  -DHAVE_INLINE
+
+spinsClusterBlocking_SOURCES = spinsClusterBlocking.c clusterupdate.c lattice.c common.c physics.c blocking.c
+spinsClusterBlocking_CFLAGS = -pg -Wall  -DHAVE_INLINE
 
 AM_CPPFLAGS = -I$(top_srcdir)/includes
 

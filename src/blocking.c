@@ -30,21 +30,79 @@
 
 
 int
-block_5_majority(settings confin,lattice_site * lin , settings confout, \
+block_4_majority(settings confin,lattice_site * lin , settings confout, \
                  lattice_site * lout)
 {
-  int i,j,k;
+  int i,j;
+  int * newloc, * oldloc;
+  int oid, nid;
+  double newspin;
+
   if(confin.spindims != 1)
   {
     fprintf(stderr,"Cannot run majority rule on more than 1 spin dimension!\n");
     return(-1);
   }
+  if((confin.sidelength & 1) != 0)
+  {
+    fprintf(stderr,"Cannot run on lattices of odd sidelength!\n");
+    return(-1);
+  }
 
+  if(confout.sidelength != confin.sidelength/2)
+  {
+    fprintf(stderr,"confout isn't set correctly.\n");
+    return(-1);
+  }
+
+  oldloc = malloc(confin.spacedims*sizeof(double));
+  newloc = malloc(confout.spacedims*sizeof(double));
+
+  for(i = 0 ; i < confout.sidelength; i++)
+  {
+    newloc[0] = i;
+    for(j = 0 ; j < confout.sidelength; j++)
+    {
+      newspin = 0;
+      newloc[1] = j;
+      nid = location_to_num(confout,newloc);
+      
+      /* Lower Left */
+      oldloc[0] = 2*i;
+      oldloc[1] = 2*i;
+      oid = location_to_num(confin,oldloc);
+      newspin = gsl_vector_get(lin[oid].spin,0);
+
+      /* Upper Left */
+      oldloc[0] = 2*i;
+      oldloc[1] = 2*i+1;
+      oid = location_to_num(confin,oldloc);
+      newspin = gsl_vector_get(lin[oid].spin,0);
+
+      /* Lower Right */
+      oldloc[0] = 2*i+1;
+      oldloc[1] = 2*i;
+      oid = location_to_num(confin,oldloc);
+      newspin = gsl_vector_get(lin[oid].spin,0);
+
+      /* Upper Right */
+      oldloc[0] = 2*i+1;
+      oldloc[1] = 2*i+1;
+      oid = location_to_num(confin,oldloc);
+      newspin = gsl_vector_get(lin[oid].spin,0);
+
+      if(newspin > 0)
+        gsl_vector_set(lout[nid].spin,0,1);
+      else if(newspin < 0)
+        gsl_vector_set(lout[nid].spin,0,-1);
+      else if( gsl_rng_uniform(confout.rng) > 0.5)
+        gsl_vector_set(lout[nid].spin,0,-1);
+      else
+        gsl_vector_set(lout[nid].spin,0,1);
+    }
+  }
   
-
+  free(newloc);
+  free(oldloc);
   return(0);
 }
-
-
-
-

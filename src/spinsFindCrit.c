@@ -44,6 +44,7 @@ main (int argc, char **argv)
   settings conf;
   double beta_step, beta_start, beta;
   datapoint data;
+  double c0, cl1, cl2, cr1, cr2;
 
   const gsl_rng_type * RngType;
 
@@ -60,9 +61,9 @@ main (int argc, char **argv)
    ************/
   conf.spindims   = 2;
   conf.spacedims  = 2;
-  conf.sidelength = 8;
-  conf.max_settle  = 100;
-  conf.block_size = 100;
+  conf.sidelength = 32;
+  conf.max_settle = 1000;
+  conf.block_size = 1000;
   conf.blocks     = 20;
   conf.verbose_flag = 0;
 
@@ -97,33 +98,36 @@ main (int argc, char **argv)
    **********************/
   double err = 100;
   double firstd, secondd;
-  double var_l, var_c, var_r;
-  beta_start      = 0.4;
-  beta_step       = 0.0001;
+  beta_start      = 0.45;
+  beta_step       = 0.001;
   double dbeta;
   beta = beta_start;
-  while(err > 0.0001)
+  while(err > 0.01)
   {
-    //Find first derivative
-    mupdatebatch(lattice,conf,beta-(beta_step/2.0),&data);
-    var_l = data.c;
-    mupdatebatch(lattice,conf,beta+(beta_step/2.0),&data);
-    var_r = data.c;
-    firstd = (var_r-var_l)/beta_step; 
+    //Calculate values of specific heat
+    //c(beta)
+    clusterupdatebatch(lattice,conf,beta,&data);
+    c0 = data.c;
+    //Left and Right one step
+    clusterupdatebatch(lattice,conf,beta-beta_step,&data);
+    cl1 = data.c;
+    clusterupdatebatch(lattice,conf,beta+beta_step,&data);
+    cr1 = data.c;
+    //Left and Right one step
+    clusterupdatebatch(lattice,conf,beta-2*beta_step,&data);
+    cl2 = data.c;
+    clusterupdatebatch(lattice,conf,beta+2*beta_step,&data);
+    cr2 = data.c;
 
+    //Find first derivative
+    firstd  = ( ((cl2-cr2)/12) +(2*(-cl1+cr1)/3) )/beta_step;
     //Find second derivative
-    mupdatebatch(lattice,conf,beta-beta_step,&data);
-    var_l = data.c;
-    mupdatebatch(lattice,conf,beta,&data);
-    var_c = data.c;
-    mupdatebatch(lattice,conf,beta+beta_step,&data);
-    var_r = data.c;
-    secondd = (var_l+var_r-2*var_c)/pow(beta_step,2); 
+    secondd = ( ((-cl2-cr2)/12) +(4*(cl1+cr1)/3) - (5*c0/2) )/pow(beta_step,2);
     
     dbeta = firstd/secondd;
-    err = fabs(dbeta);
+    err = fabs(firstd);
     beta = beta - dbeta;
-    printf("Beta Est = %g  Err = %g\n",beta,err);
+    printf("Beta Est = %g  delta= %g firstd= %g secondd= %g\n",beta,dbeta,firstd,secondd);
   }
 
   /***********
