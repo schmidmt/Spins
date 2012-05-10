@@ -69,27 +69,27 @@ block_4_majority(settings confin,lattice_site * lin , settings confout, \
       
       /* Lower Left */
       oldloc[0] = 2*i;
-      oldloc[1] = 2*i;
+      oldloc[1] = 2*j;
       oid = location_to_num(confin,oldloc);
-      newspin = gsl_vector_get(lin[oid].spin,0);
+      newspin += gsl_vector_get(lin[oid].spin,0);
 
       /* Upper Left */
       oldloc[0] = 2*i;
-      oldloc[1] = 2*i+1;
+      oldloc[1] = 2*j+1;
       oid = location_to_num(confin,oldloc);
-      newspin = gsl_vector_get(lin[oid].spin,0);
+      newspin += gsl_vector_get(lin[oid].spin,0);
 
       /* Lower Right */
       oldloc[0] = 2*i+1;
-      oldloc[1] = 2*i;
+      oldloc[1] = 2*j;
       oid = location_to_num(confin,oldloc);
-      newspin = gsl_vector_get(lin[oid].spin,0);
+      newspin += gsl_vector_get(lin[oid].spin,0);
 
       /* Upper Right */
       oldloc[0] = 2*i+1;
-      oldloc[1] = 2*i+1;
+      oldloc[1] = 2*j+1;
       oid = location_to_num(confin,oldloc);
-      newspin = gsl_vector_get(lin[oid].spin,0);
+      newspin += gsl_vector_get(lin[oid].spin,0);
 
       if(newspin > 0)
         gsl_vector_set(lout[nid].spin,0,1);

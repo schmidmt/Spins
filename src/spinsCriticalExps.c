@@ -122,9 +122,9 @@ main (int argc, char **argv)
    * Running Simulation *
    **********************/
   printf("#Starting simulation\n\n");
-  beta_start  = CRITB+0.0001;
-  beta_delta  = 0.0001;
-  beta_end    = CRITB+0.100;
+  beta_start  = CRITB-0.5*CRITB;
+  beta_delta  = 0.01;
+  beta_end    = CRITB;
 
   beta_data_points = (int)floor((beta_end-beta_start)/beta_delta);
 
@@ -141,9 +141,9 @@ main (int argc, char **argv)
   for(i = 0 ; i < beta_data_points ; i++)
   {
     loadBar(i,beta_data_points,50,80);
-    //clusterupdatebatch(lattice,conf,beta,&data);
-    mupdatebatch(lattice,conf,beta,&data);
-    tau_log[i]       = gsl_sf_log(fabs(1-CRITB/beta));
+    clusterupdatebatch(lattice,conf,beta,&data);
+    //mupdatebatch(lattice,conf,beta,&data);
+    tau_log[i]       = gsl_sf_log(fabs((CRITB-beta))/beta);
     c_log[i]         = gsl_sf_log(data.c);
     c_error_log[i]   = 1.0/gsl_pow_2(gsl_sf_log(data.c_error));
     m_log[i]         = gsl_sf_log(data.mag);
@@ -160,12 +160,15 @@ main (int argc, char **argv)
   gsl_fit_wlinear(tau_log,1,c_error_log,1,c_log,1,beta_data_points,
                   &c0, &c1, &cov00, &cov01, &cov11, &chisq);
   printf("# alpha = %g with chisq = %g\n",-c1,chisq/intpow(beta_data_points,2));
+  printf ("# best fit: Y = %g + %g X\n", c0, c1);
   gsl_fit_wlinear(tau_log,1,m_error_log,1,m_log,1,beta_data_points,
                   &c0, &c1, &cov00, &cov01, &cov11, &chisq);
   printf("# beta = %g with chisq = %g\n",-c1,chisq/intpow(beta_data_points,2));
+  printf ("# best fit: Y = %g + %g X\n", c0, c1);
   gsl_fit_wlinear(tau_log,1,chi_error_log,1,chi_log,1,beta_data_points,
                   &c0, &c1, &cov00, &cov01, &cov11, &chisq);
   printf("# gamma = %g with chisq = %g\n",-c1,chisq/intpow(beta_data_points,2));
+  printf ("# best fit: Y = %g + %g X\n", c0, c1);
 
   /***********
    * CLEANUP *
