@@ -86,8 +86,10 @@ main (int argc, char **argv)
   /*Copy old settings to blocked settings*/
   memcpy(&conf1,&conf,sizeof(settings));
   conf1.sidelength = conf.sidelength/2;
+  conf1.elements   = conf.elements/4;
   memcpy(&conf2,&conf1,sizeof(settings));
   conf2.sidelength = conf1.sidelength/2;
+  conf2.elements   = conf1.elements/4;
 
   printf("#Allocating\n");
   lattice  = allocate_lattice(conf);
@@ -140,9 +142,9 @@ main (int argc, char **argv)
       {
         clusterupdate(lattice,conf,beta);
         block_4_majority(conf,lattice,conf1,lattice1);
-        block_4_majority(conf1,lattice1,conf2,lattice2);
-        e_block[j] = total_energy(lattice2,conf2);
-        m_block[j] = magnetization(lattice2,conf2,mag_vector);
+        //block_4_majority(conf1,lattice1,conf2,lattice2);
+        e_block[j] = total_energy(lattice1,conf1);
+        m_block[j] = magnetization(lattice1,conf1,mag_vector);
       }
       e_block_avg[i]   = gsl_stats_mean(e_block,1,conf.block_size);
       e_block_error[i] = gsl_stats_sd(e_block,1,conf.block_size);
